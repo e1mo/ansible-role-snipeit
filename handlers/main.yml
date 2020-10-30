@@ -1,0 +1,7 @@
+---
+- name: Clear snipeit cache
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan config:clear"
+    chdir: "{{ snipeit_basedir }}"

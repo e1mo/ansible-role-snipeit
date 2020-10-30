@@ -1,0 +1,45 @@
+---
+- name: Create basedir with propper permissions
+  file:
+    owner: "{{ snipeit_user }}"
+    group: "{{ snipeit_group }}"
+    path: "{{ snipeit_basedir }}"
+    state: directory
+    recurse: yes
+
+- name: Download and extract snipe-it archive file
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  unarchive:
+    src: "{{ snipeit_source_archive }}"
+    dest: "{{ snipeit_basedir }}"
+    remote_src: true
+    extra_opts:
+      - '--strip-components=1'
+  when: snipeit_source == "archive"
+  tags:
+    - source
+    - download
+
+- name: Download snipe-it source via git
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  git:
+    repo: "{{ snipeit_source_git_repo }}"
+    version: "{{ snipeit_source_git_version }}"
+    dest: "{{ snipeit_basedir }}"
+    clone: yes
+    update: yes
+    force: "{{ snipeit_git_force }}"
+  when: snipeit_source == "git"
+  tags:
+    - source
+    - download
+
+- name: Run composer install
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "composer install --no-dev --prefer-source"
+    chdir: "{{ snipeit_basedir }}"
+

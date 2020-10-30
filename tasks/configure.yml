@@ -1,0 +1,74 @@
+---
+- name: Register if .env file is present
+  stat:
+    path: "{{ snipeit_basedir }}/.env"
+  register: snipeit_envfile_present
+
+- name: Copy .env.example to .env
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  copy: 
+    src: "{{ snipeit_basedir }}/.env.example"
+    dest: "{{ snipeit_basedir }}/.env"
+    mode: "0600"
+    remote_src: true
+  when: not snipeit_envfile_present.stat.exists
+
+- name: Apply conffiguration parameters to .env
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  lineinfile:
+    path: "{{ snipeit_basedir }}/.env"
+    regexp: "{{ item.name | upper }}="
+    line: "{{item.name | upper}}={{ item.value }}"
+  with_items: "{{ snipeit_config }}"
+
+- name: Generate app key
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan key:generate"
+    chdir: "{{ snipeit_basedir }}"
+  when: not snipeit_envfile_present.stat.exists
+
+- name: Link storage
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan storage:link"
+    chdir: "{{ snipeit_basedir }}"
+
+- name: Migrate database
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan migrate -n --force"
+    chdir: "{{ snipeit_basedir }}"
+
+- name: Clear snipeit cache
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan cache:clear"
+    chdir: "{{ snipeit_basedir }}"
+
+- name: Restart snipeit queue
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan queue:restart"
+    chdir: "{{ snipeit_basedir }}"
+
+- name: Create admin user
+  become: yes
+  become_user: "{{ snipeit_user }}"
+  command:
+    cmd: "php artisan snipeit:create-admin -n --email={{ snipeit_admin_user.email }} --first_name={{ snipeit_admin_user.firstName }} --last_name={{ snipeit_admin_user.lastName }} --password={{ snipeit_admin_user.password }}"
+    chdir: "{{ snipeit_basedir }}"
+  when: not snipeit_envfile_present.stat.exists or snipeit_admin_user_force
+
+- name: Install cronjob
+  cron:
+    name: "Freescout run schedule"
+    job: "php {{ snipeit_basedir }}/artisan schedule:run > /dev/null 2>&1"
+    user: "{{ snipeit_user }}"

@@ -1,0 +1,7 @@
+---
+- name: Download snipeit
+  include: download.yml
+
+- name: configure snipeit
+  include: configure.yml
+  when: snipeit_configure

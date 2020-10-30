@@ -1,0 +1,23 @@
+---
+
+snipeit_source: git # git or archive
+snipeit_source_git_repo: https://github.com/snipe/snipe-it
+snipeit_source_git_version: master
+snipeit_git_force: false
+snipeit_source_archive: https://github.com/snipe/snipe-it/archive/master.tar.gz
+
+snipeit_admin_user:
+  email: admin@example.org
+  firstName: Admin
+  lastName: istrator
+  password: admin
+
+snipeit_admin_user_force: false
+
+snipeit_basedir: /var/www/html
+snipeit_user: "{{ ansible_facts['user_id'] }}"
+snipeit_group: "{{ snipeit_user }}"
+snipeit_file_mode: "0644"
+
+snipeit_configure: true
+snipeit_config: []
